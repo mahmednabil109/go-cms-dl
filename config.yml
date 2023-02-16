@@ -1,0 +1,4 @@
+download_dir: "/mnt/VOL2/OLD_LAB/home/new/studing/guc/cms-downloads/"
+cms_url: "https://cms.guc.edu.eg"
+routines_count: 1
+dotfile_path: "./.env"
