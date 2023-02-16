@@ -1,6 +1,4 @@
-# simple web scraping go tool
-
-
+# simple web scraping go tool for SOME *CMS*
 
 # TODOS
 - [x] add http session.
