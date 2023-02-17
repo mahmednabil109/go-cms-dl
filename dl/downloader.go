@@ -7,12 +7,20 @@ import (
 
 	"github.com/Azure/go-ntlmssp"
 	"github.com/mahmednabil109/go-cms-dl/cms"
+	"github.com/mahmednabil109/go-cms-dl/material"
 	"github.com/mahmednabil109/go-cms-dl/utils"
 	"go.uber.org/zap"
 )
 
+const base_url = "https://cms.guc.edu.eg"
+
 // TODO(mahmednabil109): refactor method parameters
-func DownloadCourses(mail, password, url string, cmsParser cms.Parser, logger *zap.Logger) {
+func DownloadCourses(
+	mail, password, url string,
+	cmsParser cms.Parser,
+	mManager material.IManager,
+	logger *zap.Logger,
+) {
 	client := &http.Client{
 		Transport: ntlmssp.Negotiator{},
 	}
@@ -34,7 +42,7 @@ func DownloadCourses(mail, password, url string, cmsParser cms.Parser, logger *z
 	}
 
 	courses, _ := cmsParser.GetCourses()
-	// TODO(mahmednabil): use `config.cocurrent`
+	// TODO(mahmednabil): use `config.concurrent`
 	pool := utils.NewPool(1)
 
 	var wait sync.WaitGroup
@@ -43,14 +51,14 @@ func DownloadCourses(mail, password, url string, cmsParser cms.Parser, logger *z
 		courseLink := courseLink
 		pool.Submit(func() error {
 			defer wait.Done()
-			downloadCourse(courseLink, mail, password, logger)
+			downloadCourse(courseLink, mail, password, mManager, logger)
 			return nil
 		})
 	}
 	wait.Wait()
 }
 
-func downloadCourse(url, mail, password string, logger *zap.Logger) {
+func downloadCourse(url, mail, password string, mManager material.IManager, logger *zap.Logger) {
 	res, err := http.Get(url)
 	if err != nil {
 		logger.Fatal("failed to load course page", zap.Error(err))
@@ -63,13 +71,53 @@ func downloadCourse(url, mail, password string, logger *zap.Logger) {
 	if err != nil {
 		logger.Fatal("failed to create doc parser", zap.Error(err))
 	}
-	name, _ := gq.GetTitle()
-	weeks, _ := gq.GetWeeks()
+	name, err := gq.GetTitle()
+	if err != nil {
+		logger.Fatal("failed to get course title", zap.Error(err))
+	}
+	courseId, err := mManager.GetCourseId(name)
+	if err != nil {
+		logger.Fatal("failed to get course ID:", zap.Error(err))
+	}
 
+	weeks, err := gq.GetWeeks()
+	if err != nil {
+		logger.Fatal("failed to get weeks content", zap.Error(err))
+	}
+
+	// TODO(mahmednabil109): again read from the app config
+	pool := utils.NewPool(1)
+	var files_wg sync.WaitGroup
 	for _, week := range weeks {
 		fmt.Println("\t", name, week.Name)
+		weekId, err := mManager.GetWeekId(courseId, name)
+		fmt.Println(weekId)
+		if err != nil {
+			logger.Fatal("failed to get week ID:", zap.Error(err))
+		}
 		for _, file := range week.Files {
+			file := file
+			if mManager.FileExists(courseId, file.Name) {
+				continue
+			}
+
+			files_wg.Add(1)
 			fmt.Println("\t\t", name, file.Name)
+			pool.Submit(func() error {
+				defer files_wg.Done()
+				res, err := http.Get(base_url + file.Link)
+				fmt.Println(res.Header.Get("Content-Type"))
+				if err != nil {
+					logger.Fatal("failed to download file", zap.String("name", file.Name), zap.Error(err))
+				}
+				defer res.Body.Close()
+				err = mManager.SaveFile(weekId, "", file.Name, res.Body)
+				if err != nil {
+					logger.Fatal("failed to save downloaded file", zap.String("name", file.Name), zap.Error(err))
+				}
+				return nil
+			})
 		}
 	}
+	files_wg.Wait()
 }

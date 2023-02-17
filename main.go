@@ -6,11 +6,14 @@ import (
 
 	"github.com/mahmednabil109/go-cms-dl/cms"
 	"github.com/mahmednabil109/go-cms-dl/dl"
+	"github.com/mahmednabil109/go-cms-dl/material"
 	"github.com/mahmednabil109/go-cms-dl/utils"
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
 func main() {
+
 	logger, err := zap.NewDevelopment(
 		zap.WithCaller(false),
 	)
@@ -21,6 +24,11 @@ func main() {
 	defer logger.Sync()
 
 	cfg, err := Parse(logger)
+	if err != nil {
+		logger.Panic("", zap.Error(err))
+	}
+
+	mManager, err := material.NewManager(cfg.DownlaodDir, cfg.DBPath)
 	if err != nil {
 		logger.Panic("", zap.Error(err))
 	}
@@ -37,6 +45,7 @@ func main() {
 		password,
 		url,
 		cmsParser,
+		mManager,
 		logger,
 	)
 }

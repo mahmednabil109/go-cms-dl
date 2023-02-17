@@ -15,6 +15,7 @@ type Config struct {
 	DownlaodDir string `yaml:"download_dir"`
 	CMS_URL     string `yaml:"cms_url"`
 	DotFilePath string `yaml:"dotfile_path"`
+	DBPath      string `yaml:"db_path"`
 }
 
 // Parse reads the config file `config.yml` near the executable

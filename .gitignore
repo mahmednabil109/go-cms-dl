@@ -4,3 +4,4 @@ build
 *.pptx
 *.mp4
 .env
+*.db
