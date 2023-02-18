@@ -50,20 +50,18 @@ func NewDB(file string) (*Metadb, error) {
 }
 
 func (m *Metadb) GetCourseIdByName(name string) (int, error) {
-	row, err := m.db.Query("SELECT id FROM courses WHERE name=?", name)
-	if err != nil {
-		return -1, err
-	}
+	row := m.db.QueryRow("SELECT id FROM courses WHERE name=?", name)
 
 	var id int
-	if row.Next() {
-		err = row.Scan(&id)
+	err := row.Scan(&id)
+	if err == sql.ErrNoRows {
+		return NOTFOUND, nil
 	}
 	return id, err
 }
 
 func (m *Metadb) InsertCourse(name string, date time.Time) (int, error) {
-	res, err := m.db.Exec("INSERT INTO courses VALUES(?)", name)
+	res, err := m.db.Exec("INSERT INTO courses(name) VALUES(?)", name)
 	if err != nil {
 		return -1, err
 	}
@@ -73,14 +71,12 @@ func (m *Metadb) InsertCourse(name string, date time.Time) (int, error) {
 }
 
 func (m *Metadb) GetWeekIdByName(name string) (int, error) {
-	row, err := m.db.Query("SELECT id FROM weeks WHERE name=?", name)
-	if err != nil {
-		return -1, err
-	}
+	row := m.db.QueryRow("SELECT id FROM weeks WHERE name=?", name)
 
 	var id int
-	if row.Next() {
-		err = row.Scan(&id)
+	err := row.Scan(&id)
+	if err == sql.ErrNoRows {
+		return NOTFOUND, nil
 	}
 	return id, err
 }
@@ -96,14 +92,12 @@ func (m *Metadb) InsertWeek(courseId int, name string, date time.Time) (int, err
 }
 
 func (m *Metadb) GetFileIdByName(name string, date time.Time) (int, error) {
-	row, err := m.db.Query("SELECT id FROM files WHERE name=?", name)
-	if err != nil {
-		return -1, err
-	}
+	row := m.db.QueryRow("SELECT id FROM files WHERE name=?", name)
 
 	var id int
-	if row.Next() {
-		err = row.Scan(&id)
+	err := row.Scan(&id)
+	if err == sql.ErrNoRows {
+		return NOTFOUND, nil
 	}
 	return id, err
 }

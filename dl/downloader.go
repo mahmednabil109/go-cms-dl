@@ -131,5 +131,5 @@ func downloadFile(weekId int, file cms.CmsFile, mManager material.IManager) erro
 		return err
 	}
 	defer res.Body.Close()
-	return mManager.SaveFile(weekId, file.Name+"."+ext, res.Body)
+	return mManager.SaveFile(weekId, file.Name, ext, res.Body)
 }

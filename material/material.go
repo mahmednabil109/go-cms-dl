@@ -13,7 +13,7 @@ type IManager interface {
 	GetCourseId(name string) (int, error)
 	GetWeekId(courseId int, name string) (int, error)
 	FileExists(courseId int, name string) bool
-	SaveFile(weekId int, name string, data io.Reader) error
+	SaveFile(weekId int, name, ext string, data io.Reader) error
 }
 
 type Manager struct {
@@ -112,12 +112,12 @@ func (m *Manager) FileExists(courseId int, name string) bool {
 	return ok
 }
 
-func (m *Manager) SaveFile(weekId int, name string, data io.Reader) error {
+func (m *Manager) SaveFile(weekId int, name, ext string, data io.Reader) error {
 	weekPath, ok := m.weekPaths[weekId]
 	if !ok {
 		fmt.Printf("week path is not found %v\n", weekId)
 	}
-	filePath := path.Join(weekPath, name)
+	filePath := path.Join(weekPath, name+"."+ext)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
