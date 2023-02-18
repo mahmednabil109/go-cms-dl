@@ -1,8 +1,10 @@
 package dl
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/Azure/go-ntlmssp"
@@ -90,8 +92,7 @@ func downloadCourse(url, mail, password string, mManager material.IManager, logg
 	var files_wg sync.WaitGroup
 	for _, week := range weeks {
 		fmt.Println("\t", name, week.Name)
-		weekId, err := mManager.GetWeekId(courseId, name)
-		fmt.Println(weekId)
+		weekId, err := mManager.GetWeekId(courseId, week.Name)
 		if err != nil {
 			logger.Fatal("failed to get week ID:", zap.Error(err))
 		}
@@ -105,19 +106,30 @@ func downloadCourse(url, mail, password string, mManager material.IManager, logg
 			fmt.Println("\t\t", name, file.Name)
 			pool.Submit(func() error {
 				defer files_wg.Done()
-				res, err := http.Get(base_url + file.Link)
-				fmt.Println(res.Header.Get("Content-Type"))
+				err := downloadFile(weekId, file, mManager)
 				if err != nil {
-					logger.Fatal("failed to download file", zap.String("name", file.Name), zap.Error(err))
-				}
-				defer res.Body.Close()
-				err = mManager.SaveFile(weekId, "", file.Name, res.Body)
-				if err != nil {
-					logger.Fatal("failed to save downloaded file", zap.String("name", file.Name), zap.Error(err))
+					logger.Fatal(
+						"failed to download file",
+						zap.String("name", file.Name), zap.Error(err),
+					)
 				}
 				return nil
 			})
 		}
 	}
 	files_wg.Wait()
+}
+
+func downloadFile(weekId int, file cms.CmsFile, mManager material.IManager) error {
+	res, err := http.Get(base_url + file.Link)
+	urlComponents := strings.Split(file.Link, ".")
+	if len(urlComponents) < 2 {
+		return errors.New("can't extract the file extension")
+	}
+	ext := urlComponents[len(urlComponents)-1]
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return mManager.SaveFile(weekId, file.Name+"."+ext, res.Body)
 }
