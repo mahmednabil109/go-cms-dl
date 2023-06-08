@@ -52,7 +52,7 @@ func (g *Gquery) GetTitle() (string, error) {
 	g.doc.Find("span#ContentPlaceHolderright_ContentPlaceHoldercontent_LabelCourseName").
 		Each(func(i int, s *goquery.Selection) {
 			// TODO(mahmednabil109): trim the name and replace any special characters
-			title = s.Text()
+			title = strings.Replace(s.Text(), "/", "", -1)
 		})
 	return title, nil
 }
@@ -72,6 +72,7 @@ func (g *Gquery) GetWeeks() ([]*Week, error) {
 			return strings.HasPrefix(s.Text(), "Description")
 		}).Each(func(i int, s *goquery.Selection) {
 			week.Name = s.Parent().Parent().Find("p").Text()
+			week.Name = strings.Replace(week.Name, "/", "", -1)
 		})
 
 		s.Find(".card-body strong").Each(func(_ int, s *goquery.Selection) {

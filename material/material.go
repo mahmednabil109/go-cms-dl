@@ -66,7 +66,7 @@ func (m *Manager) GetCourseId(name string) (int, error) {
 		}
 	}
 
-	coursePath := path.Join(m.downloadsPath, name)
+	coursePath := path.Clean(path.Join(m.downloadsPath, name))
 	err = os.Mkdir(
 		coursePath,
 		0777,
@@ -97,7 +97,7 @@ func (m *Manager) GetWeekId(courseId int, name string) (int, error) {
 	if !ok {
 		fmt.Printf("course path not existing %v\n", courseId)
 	}
-	weekPath := path.Join(coursePath, name)
+	weekPath := path.Clean(path.Join(coursePath, name))
 	err = os.Mkdir(weekPath, 0777)
 	if err != nil && !os.IsExist(err) {
 		return -1, err
@@ -117,7 +117,7 @@ func (m *Manager) SaveFile(weekId int, name, ext string, data io.Reader) error {
 	if !ok {
 		fmt.Printf("week path is not found %v\n", weekId)
 	}
-	filePath := path.Join(weekPath, name+"."+ext)
+	filePath := path.Clean(path.Join(weekPath, name+"."+ext))
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
