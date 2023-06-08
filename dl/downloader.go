@@ -33,7 +33,9 @@ func DownloadCourses(
 	}
 	req.SetBasicAuth(mail, password)
 	res, err := client.Do(req)
-	if err != nil {
+	fmt.Println(res.StatusCode)
+
+	if err != nil || res.StatusCode != http.StatusOK {
 		logger.Fatal("failled to get page", zap.Error(err))
 	}
 	defer res.Body.Close()
